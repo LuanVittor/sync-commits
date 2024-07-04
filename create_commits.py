@@ -2,7 +2,7 @@
 
 import os
 import subprocess
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 
 # Configurações do repositório pessoal
 PERSONAL_REPO_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -15,13 +15,17 @@ def create_commits(date, num_commits):
     subprocess.run(["git", "pull"])
 
     for i in range(num_commits):
+        # Converter a data e horário para o fuso horário de Brasília
+        brt = timezone(timedelta(hours=-3))
+        commit_date = date.astimezone(brt).strftime("%Y-%m-%d %H:%M:%S %Z")
+
         # Criar um commit fictício
         with open("DUMMY_FILE.txt", "a") as f:
-            f.write(f"Commit from script on {date}\n")
+            f.write(f"Commit from script on {commit_date}\n")
 
         # Adicionar e comitar as mudanças
         subprocess.run(["git", "add", "DUMMY_FILE.txt"])
-        subprocess.run(["git", "commit", "--date", date, "-m", f"Dummy commit {i + 1} to reflect enterprise commit on {date}"])
+        subprocess.run(["git", "commit", "--date", date.strftime("%Y-%m-%dT%H:%M:%S"), "-m", f"Dummy commit {i + 1} to reflect enterprise commit on {commit_date}"])
 
     # Empurrar para o repositório pessoal
     subprocess.run(["git", "push", "origin", "main"])
@@ -32,10 +36,10 @@ if __name__ == "__main__":
     
     # Validar a data
     if not date_input:
-        commit_date = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+        commit_date = datetime.now(timezone.utc)
     else:
         try:
-            commit_date = datetime.strptime(date_input, "%Y-%m-%d").strftime("%Y-%m-%dT%H:%M:%S")
+            commit_date = datetime.strptime(date_input, "%Y-%m-%d").replace(tzinfo=timezone.utc)
         except ValueError:
             print("Invalid date format. Please enter the date in YYYY-MM-DD format.")
             exit(1)
@@ -52,4 +56,4 @@ if __name__ == "__main__":
     
     # Chamar a função para criar commits
     create_commits(commit_date, num_commits)
-    print(f"Successfully created {num_commits} commits for {commit_date}.")
+    print(f"Successfully created {num_commits} commits for {commit_date.astimezone(timezone(timedelta(hours=-3))).strftime('%Y-%m-%d %H:%M:%S %Z')}.")
